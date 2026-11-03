@@ -1,4 +1,5 @@
 'use strict';
+const translate = (key, values) => window.ReboxLanguage.translate(key, values);
 (() => {
   const container = document.querySelector('.assembly-scroll');
   const steps = [...container.querySelectorAll('[data-step]')];
@@ -53,7 +54,7 @@
     steps.forEach((step, index) => step.classList.toggle('is-current', index === current));
     scenes.forEach((scene, index) => scene.classList.toggle('is-current', index === current));
     marks.forEach((mark, index) => mark.classList.toggle('is-current', index <= current));
-    counter.textContent = `PASO ${String(current + 1).padStart(2, '0')} / ${String(steps.length).padStart(2, '0')}`;
+    counter.textContent = `${translate('PASO')} ${String(current + 1).padStart(2, '0')} / ${String(steps.length).padStart(2, '0')}`;
   }
 
   function scheduleUpdate() {
@@ -69,6 +70,7 @@
   // No se intercepta la rueda, el teclado ni los gestos táctiles.
   window.addEventListener('scroll', scheduleUpdate, {passive: true});
   window.addEventListener('resize', updateLayout, {passive: true});
+  document.addEventListener('rebox:languagechange', () => { current = -1; scheduleUpdate(); });
   wideScreen.addEventListener('change', updateLayout);
   reducedMotion.addEventListener('change', updateLayout);
   if ('ResizeObserver' in window) new ResizeObserver(scheduleUpdate).observe(container);
@@ -93,13 +95,13 @@ function initUsos() {
       const filled = Boolean(content);
       slot.classList.toggle('is-filled', filled);
       slot.setAttribute('aria-pressed', String(filled));
-      slot.setAttribute('aria-label', `Espacio ${index + 1}: ${filled ? content === 'socks' ? 'calcetines. Vaciar espacio.' : 'accesorios. Vaciar espacio.' : 'vacío. Llenar espacio.'}`);
+      slot.setAttribute('aria-label', translate(!filled ? 'Espacio {n}: vacío. Llenar espacio.' : content === 'socks' ? 'Espacio {n}: calcetines. Vaciar espacio.' : 'Espacio {n}: accesorios. Vaciar espacio.', {n: index + 1}));
       const object = slot.querySelector('.uses-object');
       object.className = `uses-object uses-object-${content || 'socks'}`;
     });
     presets.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.usesPreset === selectedPreset)));
     const count = contents.filter(Boolean).length;
-    counter.textContent = `${count} de 6 espacios`;
+    counter.textContent = translate('{n} de 6 espacios', {n:count});
     clearButton.disabled = count === 0;
   }
 
@@ -120,6 +122,7 @@ function initUsos() {
     render();
   });
 
+  document.addEventListener('rebox:languagechange', render);
   render();
 }
 
@@ -132,8 +135,9 @@ initUsos();
     const updateComparison = () => {
       const value = Number(slider.value);
       comparison.style.setProperty('--split', `${value}%`);
-      slider.setAttribute('aria-valuetext', value === 0 ? 'Organizador visible' : value === 100 ? 'Caja de zapatos visible' : `${value} % caja de zapatos, ${100 - value} % organizador`);
+      slider.setAttribute('aria-valuetext', value === 0 ? translate('Organizador visible') : value === 100 ? translate('Caja de zapatos visible') : translate('{box} % caja de zapatos, {organizer} % organizador', {box:value, organizer:100-value}));
     };
+    document.addEventListener('rebox:languagechange', updateComparison);
     slider.addEventListener('input', updateComparison);
     updateComparison();
   }
